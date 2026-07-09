@@ -1,0 +1,2 @@
+// therapist controllers
+module.exports={};

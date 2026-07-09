@@ -1,0 +1,281 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "MotionCare Backend API",
+    "version": "1.1.0",
+    "description": "API documentation for the Pediatric Rehabilitation Exercise Assistant (MotionCare)"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/auth/doctor/register": {
+      "post": {
+        "summary": "Register a new doctor account",
+        "tags": ["Auth - Doctor"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" },
+                  "specialization": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Doctor created" } }
+      }
+    },
+    "/api/auth/doctor/login": {
+      "post": {
+        "summary": "Login as a doctor",
+        "tags": ["Auth - Doctor"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Login successful" } }
+      }
+    },
+    "/api/auth/admin/login": {
+      "post": {
+        "summary": "Login as an administrator",
+        "tags": ["Auth - Admin"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Login successful" } }
+      }
+    },
+    "/api/auth/patient/login": {
+      "post": {
+        "summary": "Login as a patient (Mobile App)",
+        "tags": ["Auth - Patient"],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Login successful" } }
+      }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "summary": "Get global statistics for the admin dashboard",
+        "tags": ["Admin"],
+        "responses": { "200": { "description": "Global stats retrieved" } }
+      }
+    },
+    "/api/admin/doctors": {
+      "get": {
+        "summary": "Get list of all doctors in the system",
+        "tags": ["Admin"],
+        "responses": { "200": { "description": "List of doctors" } }
+      }
+    },
+    "/api/admin/patients": {
+      "get": {
+        "summary": "Get list of all patients in the system",
+        "tags": ["Admin"],
+        "responses": { "200": { "description": "List of patients" } }
+      }
+    },
+    "/api/dashboard/stats": {
+      "get": {
+        "summary": "Get doctor dashboard statistics",
+        "tags": ["Doctor Dashboard"],
+        "responses": { "200": { "description": "Dashboard stats retrieved" } }
+      }
+    },
+    "/api/patients": {
+      "post": {
+        "summary": "Register a new patient account (Doctor only)",
+        "tags": ["Patients"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": { "type": "string" },
+                  "password": { "type": "string" },
+                  "name": { "type": "string" },
+                  "age": { "type": "integer" },
+                  "notes": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Patient created" } }
+      },
+      "get": {
+        "summary": "Get a list of patients for the logged-in doctor",
+        "tags": ["Patients"],
+        "responses": { "200": { "description": "List of patients" } }
+      }
+    },
+    "/api/exercises": {
+      "get": {
+        "summary": "Get all exercises",
+        "tags": ["Exercises"],
+        "responses": { "200": { "description": "List of exercises" } }
+      },
+      "post": {
+        "summary": "Add a new exercise (Admin only)",
+        "tags": ["Exercises"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string" },
+                  "description": { "type": "string" },
+                  "image_url": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Exercise added" } }
+      }
+    },
+    "/api/programs": {
+      "post": {
+        "summary": "Create a new program for a patient",
+        "tags": ["Programs"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "patient_id": { "type": "integer" },
+                  "doctor_id": { "type": "integer", "description": "Optional for admin" },
+                  "name": { "type": "string" },
+                  "exercises": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "exercise_id": { "type": "integer" },
+                        "repetitions": { "type": "integer" },
+                        "sets": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Program created" } }
+      }
+    },
+    "/api/programs/active": {
+      "get": {
+        "summary": "Get the active program for the logged-in patient",
+        "tags": ["Programs"],
+        "responses": { "200": { "description": "Active program details" } }
+      }
+    },
+    "/api/sessions": {
+      "post": {
+        "summary": "Log a completed session from the mobile app",
+        "tags": ["Sessions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "program_id": { "type": "integer" },
+                  "duration": { "type": "integer" },
+                  "status": { "type": "string", "enum": ["completed", "missed"] },
+                  "exercises": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "program_exercise_id": { "type": "integer" },
+                        "completed_sets": { "type": "integer" },
+                        "completed_reps": { "type": "integer" }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "Session logged" } }
+      },
+      "get": {
+        "summary": "Get sessions for the logged-in patient",
+        "tags": ["Sessions"],
+        "responses": { "200": { "description": "List of sessions" } }
+      }
+    }
+  }
+}
