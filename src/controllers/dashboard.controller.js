@@ -37,6 +37,20 @@ const DashboardController = {
     } catch (error) {
        res.status(500).json({ success: false, message: error.message });
     }
+  },
+
+  async getProgressStats(req, res) {
+    try {
+      const doctor_id = req.user.id;
+      const progressData = await SessionModel.getProgressStats(doctor_id);
+      
+      res.status(200).json({
+        success: true,
+        data: progressData
+      });
+    } catch (error) {
+       res.status(500).json({ success: false, message: error.message });
+    }
   }
 };
 

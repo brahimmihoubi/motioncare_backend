@@ -10,5 +10,8 @@ router.use(roleMiddleware(['admin']));
 router.get('/doctors', AdminController.getAllDoctors);
 router.get('/patients', AdminController.getAllPatients);
 router.get('/stats', AdminController.getGlobalStats);
+router.get('/sessions', AdminController.getRecentSessions);
+router.get('/weekly-stats', AdminController.getWeeklyStats);
+router.get('/programs', AdminController.getAllPrograms);
 
 module.exports = router;

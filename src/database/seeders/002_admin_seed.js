@@ -1,7 +1,7 @@
 const { hashPassword } = require('../../utils/hash.util');
 
 const seedAdmin = async (run, get) => {
-  const adminEmail = 'admin@motioncare.com';
+  const adminEmail = 'admin';
   
   const existing = await get('SELECT id FROM users WHERE email = ?', [adminEmail]);
   if (!existing) {
@@ -13,7 +13,7 @@ const seedAdmin = async (run, get) => {
       'admin', 
       'System Administrator'
     ]);
-    console.log('Seeded default administrator successfully. (admin@motioncare.com / admin123)');
+    console.log('Seeded default administrator successfully. (admin / admin123)');
   }
 };
 

@@ -50,6 +50,51 @@ const ProgramController = {
     } catch (error) {
        res.status(500).json({ success: false, message: error.message });
     }
+  },
+
+  async getMyPrograms(req, res) {
+    try {
+      const doctor_id = req.user.id;
+      const programs = await ProgramModel.findByDoctor(doctor_id);
+      res.status(200).json({ success: true, data: programs });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async getProgramById(req, res) {
+    try {
+      const program = await ProgramModel.findById(req.params.id);
+      if (!program) return res.status(404).json({ success: false, message: 'Program not found' });
+      res.status(200).json({ success: true, data: program });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  async updateProgram(req, res) {
+    try {
+      const program_id = req.params.id;
+      const { name, active, exercises } = req.body;
+
+      // Verify program belongs to this doctor
+      const program = await ProgramModel.findById(program_id);
+      if (!program) return res.status(404).json({ success: false, message: 'Program not found' });
+
+      await ProgramModel.updateProgram(program_id, {
+        name: name ?? program.name,
+        active: active !== undefined ? (active ? 1 : 0) : program.active,
+      });
+
+      if (exercises && Array.isArray(exercises)) {
+        await ProgramModel.updateExercises(program_id, exercises);
+      }
+
+      const updated = await ProgramModel.findById(program_id);
+      res.status(200).json({ success: true, message: 'Program updated', data: updated });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
   }
 };
 

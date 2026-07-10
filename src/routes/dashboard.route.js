@@ -7,5 +7,6 @@ const roleMiddleware = require('../middlewares/role.middleware');
 router.use(authMiddleware);
 
 router.get('/stats', roleMiddleware(['doctor']), DashboardController.getDashboardStats);
+router.get('/progress', roleMiddleware(['doctor']), DashboardController.getProgressStats);
 
 module.exports = router;

@@ -2,6 +2,7 @@ const { verifyToken } = require('../utils/jwt.util');
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
+  console.log('Auth middleware: ', authHeader);
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ success: false, message: 'Authentication required' });
   }
