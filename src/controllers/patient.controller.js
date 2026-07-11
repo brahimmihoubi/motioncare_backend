@@ -1,6 +1,7 @@
 const PatientModel = require('../models/patient.model');
 const UserModel = require('../models/user.model');
 const { hashPassword } = require('../utils/hash.util');
+const { emit } = require('../services/socket.service');
 
 const PatientController = {
   async registerPatient(req, res) {
@@ -16,7 +17,7 @@ const PatientController = {
       const userId = await UserModel.create({ email, password: hashedPassword, role: 'patient', name });
       
       await PatientModel.create({ user_id: userId, doctor_id: doctorId, age: age || 0, notes: notes || '' });
-      
+      emit('patient:created', { userId, doctorId, email, name });
       res.status(201).json({ success: true, message: 'Patient registered successfully', data: { id: userId, email, name } });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });

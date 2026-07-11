@@ -110,6 +110,12 @@ const ProgramModel = {
       ORDER BY prog.created_at DESC
     `;
     return await all(sql, [doctor_id]);
+  },
+
+  async delete(program_id) {
+    // Also delete associated exercises
+    await run(`DELETE FROM program_exercises WHERE program_id = ?`, [program_id]);
+    await run(`DELETE FROM programs WHERE id = ?`, [program_id]);
   }
 };
 

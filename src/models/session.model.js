@@ -122,6 +122,17 @@ const SessionModel = {
       ORDER BY date(date) ASC
     `;
     return await all(sql);
+  },
+
+  async update(id, { status, duration }) {
+    const sql = `UPDATE sessions SET status = ?, duration = ? WHERE id = ?`;
+    return await run(sql, [status, duration, id]);
+  },
+
+  async delete(id) {
+    // Also delete session_exercises
+    await run(`DELETE FROM session_exercises WHERE session_id = ?`, [id]);
+    await run(`DELETE FROM sessions WHERE id = ?`, [id]);
   }
 };
 

@@ -1,5 +1,6 @@
 const SessionModel = require('../models/session.model');
 const SessionExerciseModel = require('../models/sessionExercise.model');
+const { emit } = require('../services/socket.service');
 
 const SessionController = {
   async logSession(req, res) {
@@ -20,6 +21,7 @@ const SessionController = {
         }
       }
       
+      emit('session:created', { session_id, patient_id, program_id, status });
       res.status(201).json({ success: true, message: 'Session logged successfully', data: { session_id } });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
