@@ -2,6 +2,7 @@ const PatientModel = require('../models/patient.model');
 const UserModel = require('../models/user.model');
 const { hashPassword } = require('../utils/hash.util');
 const { emit } = require('../services/socket.service');
+const NotificationModel = require('../models/notification.model');
 
 const PatientController = {
   async registerPatient(req, res) {
@@ -18,6 +19,19 @@ const PatientController = {
       
       await PatientModel.create({ user_id: userId, doctor_id: doctorId, age: age || 0, notes: notes || '' });
       emit('patient:created', { userId, doctorId, email, name });
+      
+      // Notify all admins about the new patient registration
+      const admins = await UserModel.findAllByRole('admin');
+      for (const admin of admins) {
+        await NotificationModel.create({
+          user_id: admin.id,
+          title: 'New Patient Registered',
+          body: `Patient ${name} was just registered.`,
+          type: 'info'
+        });
+      }
+      emit('notification:created', { title: 'New Patient Registered', type: 'info' });
+
       res.status(201).json({ success: true, message: 'Patient registered successfully', data: { id: userId, email, name } });
     } catch (error) {
       res.status(400).json({ success: false, message: error.message });

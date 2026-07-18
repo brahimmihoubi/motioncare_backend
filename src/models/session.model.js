@@ -1,9 +1,56 @@
 const { run, get, all } = require('../config/database');
 
+// SRS-compliant session statuses
+const VALID_SESSION_STATUSES = ['pending', 'countdown', 'running', 'paused', 'stopped', 'completed', 'missed', 'emergency_stop'];
+
 const SessionModel = {
-  async create({ patient_id, program_id, duration, status = 'completed' }) {
+  async create({ patient_id, program_id, duration = 0, status = 'pending' }) {
     const sql = `INSERT INTO sessions (patient_id, program_id, duration, status) VALUES (?, ?, ?, ?)`;
     return await run(sql, [patient_id, program_id, duration, status]);
+  },
+
+  async findById(id) {
+    const session = await get(`
+      SELECT s.*, u.name as patient_name, prog.name as program_name,
+             d.name as doctor_name, es.state as exo_state, es.elapsed_seconds, es.motor_state
+      FROM sessions s
+      JOIN users u ON s.patient_id = u.id
+      LEFT JOIN programs prog ON s.program_id = prog.id
+      LEFT JOIN users d ON prog.doctor_id = d.id
+      LEFT JOIN exoskeleton_sessions es ON es.session_id = s.id
+      WHERE s.id = ?
+    `, [id]);
+    return session;
+  },
+
+  async findAll({ doctor_id, patient_id, status, page = 1, limit = 20 } = {}) {
+    const offset = (page - 1) * limit;
+    let where = 'WHERE 1=1';
+    const params = [];
+    if (doctor_id) { where += ' AND prog.doctor_id = ?'; params.push(doctor_id); }
+    if (patient_id) { where += ' AND s.patient_id = ?'; params.push(patient_id); }
+    if (status) { where += ' AND s.status = ?'; params.push(status); }
+
+    const rows = await all(`
+      SELECT s.id, s.status, s.date, s.duration,
+             u.name as patient_name, prog.name as program_name,
+             es.state as exo_state, es.elapsed_seconds
+      FROM sessions s
+      JOIN users u ON s.patient_id = u.id
+      LEFT JOIN programs prog ON s.program_id = prog.id
+      LEFT JOIN exoskeleton_sessions es ON es.session_id = s.id
+      ${where}
+      ORDER BY s.date DESC
+      LIMIT ? OFFSET ?
+    `, [...params, limit, offset]);
+
+    const [{ total }] = await all(`
+      SELECT COUNT(*) as total FROM sessions s
+      LEFT JOIN programs prog ON s.program_id = prog.id
+      ${where}
+    `, params);
+
+    return { rows, total, page, limit };
   },
 
   async findByPatient(patient_id) {
@@ -124,9 +171,14 @@ const SessionModel = {
     return await all(sql);
   },
 
-  async update(id, { status, duration }) {
-    const sql = `UPDATE sessions SET status = ?, duration = ? WHERE id = ?`;
-    return await run(sql, [status, duration, id]);
+  async update(id, updates = {}) {
+    const fields = [];
+    const params = [];
+    if (updates.status !== undefined) { fields.push('status = ?'); params.push(updates.status); }
+    if (updates.duration !== undefined) { fields.push('duration = ?'); params.push(updates.duration); }
+    if (fields.length === 0) return;
+    params.push(id);
+    await run(`UPDATE sessions SET ${fields.join(', ')} WHERE id = ?`, params);
   },
 
   async delete(id) {

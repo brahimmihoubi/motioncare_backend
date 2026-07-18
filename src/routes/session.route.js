@@ -1,18 +1,27 @@
 const express = require('express');
 const router = express.Router();
 const SessionController = require('../controllers/session.controller');
+const exoskeletonRouter = require('./exoskeleton.route');
 const authMiddleware = require('../middlewares/auth.middleware');
 const roleMiddleware = require('../middlewares/role.middleware');
 
 router.use(authMiddleware);
 
-// Patient logs a session
-router.post('/', roleMiddleware(['patient']), SessionController.logSession);
+// Doctor/Admin: create a session for a patient
+router.post('/', roleMiddleware(['doctor', 'admin']), SessionController.createSessionForPatient);
 
-// Patient gets their own sessions
-router.get('/', roleMiddleware(['patient']), SessionController.getPatientSessions);
+// Patient logs their own session (legacy — kept for compatibility)
+router.post('/log', roleMiddleware(['patient', 'doctor', 'admin']), SessionController.logSession);
 
-// Doctor views a patient's sessions
-router.get('/patient/:patientId', roleMiddleware(['doctor']), SessionController.getPatientSessions);
+// Get sessions
+router.get('/', roleMiddleware(['doctor', 'admin']), SessionController.getAllSessions);
+router.get('/patient/:patientId', roleMiddleware(['doctor', 'admin']), SessionController.getPatientSessions);
+router.get('/:id', roleMiddleware(['doctor', 'admin']), SessionController.getSessionById);
+
+// Session status update
+router.patch('/:id/status', roleMiddleware(['doctor', 'admin']), SessionController.updateSessionStatus);
+
+// Exoskeleton control sub-router (nested under session ID)
+router.use('/:id/exo', exoskeletonRouter);
 
 module.exports = router;

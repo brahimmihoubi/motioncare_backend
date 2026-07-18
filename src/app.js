@@ -10,6 +10,9 @@ const programRoutes = require('./routes/program.route');
 const sessionRoutes = require('./routes/session.route');
 const dashboardRoutes = require('./routes/dashboard.route');
 const adminRoutes = require('./routes/admin.route');
+const exerciseRequestRoutes = require('./routes/exerciseRequest.route');
+const notificationRoutes = require('./routes/notification.route');
+const auditLogRoutes = require('./routes/auditLog.route');
 
 const app = express();
 
@@ -17,20 +20,33 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
+
 // Health Check
-app.get('/api/health', (req, res) => res.json({ success: true, message: 'MotionCare Backend is running' }));
+app.get('/api/health', (req, res) => res.json({
+  success: true,
+  message: 'MotionCare Backend is running',
+  version: '2.0.0',
+  timestamp: new Date().toISOString()
+}));
 
 // Root Route
-app.get('/', (req, res) => res.send('Welcome to the MotionCare API! Try accessing /api/health'));
+app.get('/', (req, res) => res.send('Welcome to the MotionCare API v2.0! See /api-docs'));
 
-// API Routes
+// ── Core API Routes ───────────────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/patients', patientRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/programs', programRoutes);
-app.use('/api/sessions', sessionRoutes);
+app.use('/api/sessions', sessionRoutes);          // includes /sessions/:id/exo/*
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
+
+// ── SRS New Routes ────────────────────────────────────────────────────────────
+app.use('/api/exercise-requests', exerciseRequestRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/audit-logs', auditLogRoutes);
 
 // Swagger API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -38,7 +54,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 // Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: 'Something broke!' });
+  res.status(500).json({ success: false, message: 'Something broke!', error: err.message });
 });
 
 module.exports = app;

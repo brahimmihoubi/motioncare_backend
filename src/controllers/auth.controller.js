@@ -38,6 +38,29 @@ const AuthController = {
     } catch (error) {
       res.status(401).json({ success: false, message: error.message });
     }
+  },
+
+  async refreshToken(req, res) {
+    try {
+      const { refreshToken } = req.body;
+      if (!refreshToken) {
+        return res.status(400).json({ success: false, message: 'Refresh token required' });
+      }
+      const tokens = await AuthService.refreshAccessToken(refreshToken);
+      res.status(200).json({ success: true, data: tokens });
+    } catch (error) {
+      res.status(401).json({ success: false, message: error.message });
+    }
+  },
+
+  async logout(req, res) {
+    try {
+      const { refreshToken } = req.body;
+      await AuthService.logout(refreshToken);
+      res.status(200).json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
   }
 };
 

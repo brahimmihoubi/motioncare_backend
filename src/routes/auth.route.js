@@ -9,7 +9,13 @@ router.post('/doctor/login', AuthController.loginDoctor);
 // Admin Auth
 router.post('/admin/login', AuthController.loginAdmin);
 
-// Patient Auth
+// Patient Auth  
 router.post('/patient/login', AuthController.loginPatient);
+
+// Token Refresh (SRS: Refresh Token rotation)
+router.post('/refresh', AuthController.refreshToken);
+
+// Logout (revoke refresh token)
+router.post('/logout', AuthController.logout);
 
 module.exports = router;

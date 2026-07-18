@@ -1,6 +1,6 @@
 const UserModel = require('../models/user.model');
 const DoctorModel = require('../models/doctor.model');
-const PatientModel = require('../models/patient.model');
+const RefreshTokenModel = require('../models/refreshToken.model');
 const { hashPassword, comparePassword } = require('../utils/hash.util');
 const { generateToken } = require('../utils/jwt.util');
 
@@ -28,11 +28,39 @@ const AuthService = {
       throw new Error('Invalid email or password');
     }
 
-    const token = generateToken({ id: user.id, role: user.role });
+    // Access token (short-lived: 15m)
+    const accessToken = generateToken({ id: user.id, role: user.role }, '15m');
+    // Refresh token (long-lived: 30d, stored in DB)
+    const refreshToken = await RefreshTokenModel.create(user.id, 30);
+
     return {
       user: { id: user.id, email: user.email, role: user.role, name: user.name },
-      token
+      token: accessToken,         // keep backward-compatible field name
+      accessToken,
+      refreshToken
     };
+  },
+
+  async refreshAccessToken(refreshToken) {
+    const stored = await RefreshTokenModel.findByToken(refreshToken);
+    if (!stored) throw new Error('Invalid or expired refresh token');
+
+    // Look up the user to get their real role
+    const user = await UserModel.findById(stored.user_id);
+    if (!user) throw new Error('User not found');
+
+    // Revoke old token and issue new pair (rotation)
+    await RefreshTokenModel.revoke(refreshToken);
+    const newAccessToken = generateToken({ id: user.id, role: user.role }, '15m');
+    const newRefreshToken = await RefreshTokenModel.create(user.id, 30);
+
+    return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+  },
+
+  async logout(refreshToken) {
+    if (refreshToken) {
+      await RefreshTokenModel.revoke(refreshToken);
+    }
   }
 };
 

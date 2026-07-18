@@ -46,7 +46,18 @@ const initDB = async () => {
       else resolve();
     });
   });
-  console.log("Database schema initialized.");
+  console.log("Database schema (001) initialized.");
+
+  // SRS Upgrade migration
+  const upgradePath = path.resolve(__dirname, '../database/migrations/002_srs_upgrade.sql');
+  const upgradeSchema = fs.readFileSync(upgradePath, 'utf8');
+  await new Promise((resolve, reject) => {
+    db.exec(upgradeSchema, (err) => {
+      if (err) { console.warn('[Migration 002] Warning:', err.message); resolve(); } // non-fatal for idempotency
+      else resolve();
+    });
+  });
+  console.log("Database schema (002) initialized.");
 
   // Execute seeders
   const { seedExercises } = require('../database/seeders/001_default_exercises');
