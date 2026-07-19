@@ -59,6 +59,28 @@ const initDB = async () => {
   });
   console.log("Database schema (002) initialized.");
 
+  // Fix sessions status CHECK constraint migration
+  const fixStatusPath = path.resolve(__dirname, '../database/migrations/003_fix_sessions_status.sql');
+  const fixStatusSchema = fs.readFileSync(fixStatusPath, 'utf8');
+  await new Promise((resolve, reject) => {
+    db.exec(fixStatusSchema, (err) => {
+      if (err) { console.warn('[Migration 003] Warning:', err.message); resolve(); } // non-fatal for idempotency
+      else resolve();
+    });
+  });
+  console.log("Database schema (003) initialized.");
+
+  // Custom exercise request fields migration
+  const customReqPath = path.resolve(__dirname, '../database/migrations/004_custom_exercise_requests.sql');
+  const customReqSchema = fs.readFileSync(customReqPath, 'utf8');
+  await new Promise((resolve, reject) => {
+    db.exec(customReqSchema, (err) => {
+      if (err) { console.warn('[Migration 004] Warning:', err.message); resolve(); }
+      else resolve();
+    });
+  });
+  console.log("Database schema (004) initialized.");
+
   // Execute seeders
   const { seedExercises } = require('../database/seeders/001_default_exercises');
   await seedExercises(run, get);

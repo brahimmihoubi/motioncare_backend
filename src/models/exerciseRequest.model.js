@@ -1,11 +1,14 @@
 const { run, get, all } = require('../config/database');
 
 const ExerciseRequestModel = {
-  async create({ doctor_id, patient_id, exercise_id, notes }) {
+  // Supports two modes:
+  //  1. Custom request (from mobile): { doctor_id, name, description, reference_link, notes }
+  //  2. Legacy request (from admin):  { doctor_id, patient_id, exercise_id, notes }
+  async create({ doctor_id, patient_id = null, exercise_id = null, name = null, description = null, reference_link = null, notes = null }) {
     const result = await run(
-      `INSERT INTO exercise_requests (doctor_id, patient_id, exercise_id, notes, status)
-       VALUES (?, ?, ?, ?, 'pending')`,
-      [doctor_id, patient_id, exercise_id, notes || '']
+      `INSERT INTO exercise_requests (doctor_id, patient_id, exercise_id, name, description, reference_link, notes, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [doctor_id, patient_id, exercise_id, name, description, reference_link, notes]
     );
     return result.id;
   },
@@ -20,13 +23,14 @@ const ExerciseRequestModel = {
     const rows = await all(`
       SELECT 
         er.id, er.status, er.notes, er.admin_notes, er.created_at, er.updated_at,
+        er.name, er.description, er.reference_link,
         doc.name AS doctor_name, doc.email AS doctor_email,
         pat.name AS patient_name,
         ex.id AS exercise_id, ex.name AS exercise_name, ex.description AS exercise_description
       FROM exercise_requests er
       JOIN users doc ON er.doctor_id = doc.id
-      JOIN users pat ON er.patient_id = pat.id
-      JOIN exercises ex ON er.exercise_id = ex.id
+      LEFT JOIN users pat ON er.patient_id = pat.id
+      LEFT JOIN exercises ex ON er.exercise_id = ex.id
       ${where}
       ORDER BY er.created_at DESC
       LIMIT ? OFFSET ?
@@ -41,13 +45,14 @@ const ExerciseRequestModel = {
       SELECT 
         er.id, er.status, er.notes, er.admin_notes, er.created_at, er.updated_at,
         er.doctor_id, er.patient_id, er.exercise_id,
+        er.name, er.description, er.reference_link,
         doc.name AS doctor_name, doc.email AS doctor_email,
         pat.name AS patient_name,
         ex.name AS exercise_name
       FROM exercise_requests er
       JOIN users doc ON er.doctor_id = doc.id
-      JOIN users pat ON er.patient_id = pat.id
-      JOIN exercises ex ON er.exercise_id = ex.id
+      LEFT JOIN users pat ON er.patient_id = pat.id
+      LEFT JOIN exercises ex ON er.exercise_id = ex.id
       WHERE er.id = ?
     `, [id]);
   },
@@ -63,11 +68,12 @@ const ExerciseRequestModel = {
     return await all(`
       SELECT 
         er.id, er.status, er.notes, er.admin_notes, er.created_at, er.updated_at,
+        er.name, er.description, er.reference_link,
         pat.name AS patient_name,
         ex.name AS exercise_name, ex.description AS exercise_description
       FROM exercise_requests er
-      JOIN users pat ON er.patient_id = pat.id
-      JOIN exercises ex ON er.exercise_id = ex.id
+      LEFT JOIN users pat ON er.patient_id = pat.id
+      LEFT JOIN exercises ex ON er.exercise_id = ex.id
       WHERE er.doctor_id = ?
       ORDER BY er.created_at DESC
     `, [doctor_id]);

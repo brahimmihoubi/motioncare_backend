@@ -14,13 +14,33 @@ const ExerciseRequestController = {
   async create(req, res) {
     try {
       const doctor_id = req.user.id;
-      const { patient_id, exercise_id, notes } = req.body;
+      const { patient_id, exercise_id, notes, name, description, reference_link } = req.body;
 
-      if (!patient_id || !exercise_id) {
-        return res.status(400).json({ success: false, message: 'patient_id and exercise_id are required' });
+      // Mode 1 – Custom request from mobile doctor (name + description)
+      // Mode 2 – Legacy request (exercise_id + patient_id)
+      const isCustomRequest = !!(name || description);
+      const isLegacyRequest = !!(exercise_id);
+
+      if (!isCustomRequest && !isLegacyRequest) {
+        return res.status(400).json({
+          success: false,
+          message: 'Provide either (name + description) for a custom request, or exercise_id for an existing exercise.'
+        });
       }
 
-      const id = await ExerciseRequestModel.create({ doctor_id, patient_id, exercise_id, notes });
+      if (isCustomRequest && !name) {
+        return res.status(400).json({ success: false, message: 'Exercise name is required for a custom request.' });
+      }
+
+      const id = await ExerciseRequestModel.create({
+        doctor_id,
+        patient_id: patient_id || null,
+        exercise_id: exercise_id || null,
+        name: name || null,
+        description: description || null,
+        reference_link: reference_link || null,
+        notes: notes || null
+      });
 
       // Notify all admin users
       const admins = await UserModel.findAllByRole('admin');
@@ -28,12 +48,14 @@ const ExerciseRequestController = {
         await NotificationModel.create({
           user_id: admin.id,
           title: 'New Exercise Request',
-          body: `A doctor has submitted a new exercise request for a patient.`,
+          body: isCustomRequest
+            ? `A doctor has requested a new custom exercise: "${name}".`
+            : `A doctor has submitted an exercise request for a patient.`,
           type: 'info'
         });
       }
 
-      emit('exercise_request:created', { id, doctor_id, patient_id, exercise_id });
+      emit('exercise_request:created', { id, doctor_id, patient_id: patient_id || null, exercise_id: exercise_id || null, name: name || null });
 
       await AuditLogModel.create({
         user_id: doctor_id,
@@ -41,7 +63,7 @@ const ExerciseRequestController = {
         action: 'CREATE',
         entity: 'ExerciseRequest',
         entity_id: String(id),
-        payload: { patient_id, exercise_id, notes },
+        payload: { patient_id, exercise_id, name, notes },
         ip: req.ip
       });
 
@@ -50,6 +72,7 @@ const ExerciseRequestController = {
       res.status(500).json({ success: false, message: error.message });
     }
   },
+
 
   /**
    * Doctor: Get my exercise requests
@@ -124,6 +147,21 @@ const ExerciseRequestController = {
       if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
 
       await ExerciseRequestModel.updateStatus(req.params.id, status, admin_notes);
+
+      // AUTOMATION: If a custom request is marked as 'delivered', automatically add it to the exercises table!
+      if (status === 'delivered' && request.name) {
+        try {
+          const ExerciseModel = require('../models/exercise.model');
+          await ExerciseModel.create({
+            name: request.name,
+            description: request.description || 'Custom requested exercise',
+            image_url: request.reference_link || '' // Use reference link as a fallback placeholder
+          });
+        } catch (err) {
+          // It might already exist (UNIQUE constraint on name)
+          console.warn('Could not auto-create exercise, might already exist:', err.message);
+        }
+      }
 
       // Notify the doctor
       const statusMessages = {

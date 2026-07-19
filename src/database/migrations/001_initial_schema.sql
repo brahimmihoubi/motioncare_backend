@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   program_id INTEGER NOT NULL,
   date DATETIME DEFAULT CURRENT_TIMESTAMP,
   duration INTEGER DEFAULT 0,
-  status TEXT DEFAULT 'completed' CHECK(status IN ('completed', 'missed', 'pending')),
+  status TEXT DEFAULT 'pending' CHECK(status IN ('completed', 'missed', 'pending', 'running', 'paused', 'stopped', 'countdown', 'emergency_stop')),
   FOREIGN KEY (patient_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (program_id) REFERENCES programs(id) ON DELETE CASCADE
 );
